@@ -44,8 +44,9 @@ contract CKVerifier {
     return block_number;
   }
 
-  function puz_accept(bytes32 data_hash) private returns(bool) {
-    return true; // TODO
+  function puz_accept(bytes32 data_hash) private view returns(bool) {
+    if (difficulty == 0) return true;
+    return (uint(data_hash)) < (1 << (256 - difficulty));
   }
 
   function zk_accept(uint aX, uint aY, uint challenge, uint response, uint pkX, uint pkY) private pure returns(bool) {
@@ -56,7 +57,7 @@ contract CKVerifier {
     return (gsX == rhsX) && (gsY == rhsY);
   }
 
-  function verify(uint _job_id, uint nonce1, uint nonce2, uint response) public returns (bool) {
+  function verify(uint _job_id, uint nonce1, uint nonce2, uint response) public view returns (bool) {
     uint aX = commitmentsX[_job_id];
     uint aY = commitmentsY[_job_id];
     uint pkX = pub_keysX[_job_id];
@@ -73,19 +74,3 @@ contract CKVerifier {
     return zk_accept(aX, aY, uint(challenge), response, pkX, pkY);
   }
 }
-
-// contract Greeter {
-//     string private greeting;
-
-
-
-//     function greet() public view returns (string memory) {
-//         return greeting;
-//     }
-
-//     function setGreeting(string memory _greeting) public {
-//         console.log("Changing greeting from '%s' to '%s'", greeting, _greeting);
-//         greeting = _greeting;
-//     }
-// }
-
