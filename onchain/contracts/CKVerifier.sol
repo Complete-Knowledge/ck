@@ -29,15 +29,15 @@ contract CKVerifier {
   }
   
   function register_job(uint _aX, uint _aY, uint _pkX, uint _pkY) public returns(uint) {
+    curr_job += 1;
     commitmentsX[curr_job] = _aX;
     commitmentsY[curr_job] = _aY;
     pub_keysX[curr_job] = _pkX;
     pub_keysY[curr_job] = _pkY;
-    curr_job += 1;
-    return curr_job - 1;
+    return curr_job;
   }
 
-  function init_challenge(uint _randomness, uint _job_id) public returns(uint) {
+  function init_challenge(uint _job_id, uint _randomness) public returns(uint) {
     randomness_inputs[_job_id] = _randomness;
     uint block_number = block.number;
     start_blocks[_job_id] = block_number;
@@ -53,7 +53,6 @@ contract CKVerifier {
     (uint gsX, uint gsY) = EllipticCurve.ecMul(response, GX, GY, AA, PP);
     (uint tempX, uint tempY) = EllipticCurve.ecMul(challenge, pkX, pkY, AA, PP);
     (uint rhsX, uint rhsY) = EllipticCurve.ecAdd(aX, aY, tempX, tempY, AA, PP);
-    
     return (gsX == rhsX) && (gsY == rhsY);
   }
 
