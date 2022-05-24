@@ -63,7 +63,7 @@ contract CKVerifier {
     uint pkX = pub_keysX[_job_id];
     uint pkY = pub_keysY[_job_id];
     uint random_input = randomness_inputs[_job_id];
-    bytes32 challenge = sha256(abi.encode(random_input, nonce2));
+    bytes32 challenge = sha256(abi.encodePacked(nonce2, random_input));
     if (block.number - start_blocks[_job_id] > time_threshold) {
       return false;
     }
