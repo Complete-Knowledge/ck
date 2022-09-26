@@ -44,6 +44,8 @@ async function main() {
   
   const diff1 = BigNumber.from("0x00000000ffff0000000000000000000000000000000000000000000000000000");
   console.log("Block difficulty:", diff1.mul(1e8).div(BigNumber.from(blockHash)).toNumber() / 1e8);
+  const diffContract = await bs.blockDifficulty(blockHash);
+  console.log(" (as computed by the contract):", diffContract.toNumber());
 }
 
 // We recommend this pattern to be able to use async/await everywhere

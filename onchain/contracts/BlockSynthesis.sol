@@ -66,4 +66,8 @@ contract BlockSynthesis {
   function blockHash(bytes calldata blockHeader) public pure returns (bytes32) {
     return bytes32(reverseUint256(uint256(sha256d(blockHeader))));
   }
+  
+  function blockDifficulty(bytes32 hash) public pure returns (uint256) {
+    return 0x00000000ffff0000000000000000000000000000000000000000000000000000 / uint256(hash);
+  }
 }
