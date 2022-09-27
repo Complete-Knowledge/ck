@@ -1,6 +1,23 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.17;
 
+/*
+	Describes a Bitcoin block with a single transaction: the concatenation of
+	genTx0, extraNonce1, extraNonce2, and genTx1.
+*/
+struct SingleTxBitcoinBlock {
+  bytes genTx0;
+  bytes4 extraNonce1;
+  bytes extraNonce2;
+  bytes genTx1;
+  
+  bytes4 nonce;
+  bytes4 bits;
+  bytes4 nTime;
+  bytes32 previousBlockHash;
+  bytes4 version;
+}
+
 contract BlockSynthesis {
   
   function reverseUint256(uint256 input) internal pure returns (uint256 v) {
@@ -34,7 +51,7 @@ contract BlockSynthesis {
     return newBytes;
   }
   
-  function sha256d(bytes calldata data) public pure returns (bytes32) {
+  function sha256d(bytes memory data) public pure returns (bytes32) {
     return sha256(bytes.concat(sha256(data)));
   }
 
@@ -47,7 +64,7 @@ contract BlockSynthesis {
     return bytes.concat(genTx0, extraNonce1, extraNonce2, genTx1);
   }
   
-  function coinbaseHash(bytes calldata coinbaseTx) public pure returns (bytes32) {
+  function coinbaseHash(bytes memory coinbaseTx) public pure returns (bytes32) {
     return bytes32(reverseUint256(uint256(sha256d(coinbaseTx))));
   }
   
@@ -61,6 +78,13 @@ contract BlockSynthesis {
   ) public pure returns (bytes memory) {
     bytes memory headerPreReverse = bytes.concat(nonce, bits, nTime, merkleRoot, previousBlockHash, version);
     return reverseBytes(headerPreReverse);
+  }
+  
+  function createSingleTxHeader(SingleTxBitcoinBlock calldata blockData) public pure returns (bytes memory) {
+  	bytes memory coinbaseTx = createCoinbaseTx(blockData.genTx0, blockData.extraNonce1, blockData.extraNonce2, blockData.genTx1);
+  	bytes32 merkleRoot = coinbaseHash(coinbaseTx);
+  	return createBlockHeader(blockData.nonce, blockData.bits, blockData.nTime,
+  		merkleRoot, blockData.previousBlockHash, blockData.version);
   }
   
   function blockHash(bytes calldata blockHeader) public pure returns (bytes32) {

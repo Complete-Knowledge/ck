@@ -16,7 +16,7 @@ async function main() {
 
   // We get the contract to deploy
   const Verifier = await hre.ethers.getContractFactory("CKVerifier");
-  const verifier = await Verifier.deploy(2, 1000);
+  const verifier = await Verifier.deploy(2, 1000, 1);
 
   await verifier.deployed();
 
@@ -27,16 +27,17 @@ async function main() {
   pkx = ethers.BigNumber.from("112711660439710606056748659173929673102114977341539408544630613555209775888121"); // 3G
   pky = ethers.BigNumber.from("25583027980570883691656905877401976406448868254816295069919888960541586679410");
 
-  await verifier.register_job(ax, ay, pkx, pky);
+  await verifier.register_job([ax], [ay], pkx, pky);
   
-  start_block = await verifier.init_challenge(1, 10);
+  const randomness = 10;
+  start_block = await verifier.init_challenge(1);
   //challenge = 0x5f112a25806694ac59cc10a9674b04cace29f2487ef2cf0441303f14b48946d6 from hashing
   // group order = 115792089237316195423570985008687907852837564279074904382605163141518161494337
   //response = (3*challenge  + 2) % group order
   response = ethers.BigNumber.from("13208054462378716353836018817465374182937102629100531704803268528485859431235")
   nonce1 = 58
   nonce2 = 100
-  result = await verifier.verify(1, nonce1, nonce2, response);
+  result = await verifier.wouldVerify(1, nonce1, nonce2, response, randomness);
   console.log(result);
 }
 
