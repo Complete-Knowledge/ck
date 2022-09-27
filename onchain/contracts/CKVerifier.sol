@@ -15,33 +15,39 @@ contract CKVerifier {
   uint public  difficulty;
   uint public time_threshold;
   uint public curr_job = 0;
+  uint public numberOfRounds;
 
-  mapping (uint => uint) commitmentsX; // job id to commitment
-  mapping (uint => uint) commitmentsY; // job id to commitment
+  mapping (uint => uint[]) commitmentsX; // job id to commitment
+  mapping (uint => uint[]) commitmentsY; // job id to commitment
   mapping (uint => uint) randomness_inputs; // job id to trusted random input\
   mapping (uint => uint) pub_keysX;
   mapping (uint => uint) pub_keysY;
-  mapping (uint => uint) start_blocks;
+  mapping (uint => uint) start_times;
 
-  constructor(uint _d, uint _tau) public {
+  constructor(uint _d, uint _tau, uint nRounds) public {
     difficulty = _d;
     time_threshold = _tau;
+    numberOfRounds = nRounds;
   }
   
-  function register_job(uint _aX, uint _aY, uint _pkX, uint _pkY) public returns(uint) {
+  function register_job(uint _aX[], uint _aY[], uint _pkX, uint _pkY) public returns(uint) {
+    require(_ax.length == numberOfRounds);
+    require(_ay.length == numberOfRounds);
     curr_job += 1;
     commitmentsX[curr_job] = _aX;
     commitmentsY[curr_job] = _aY;
     pub_keysX[curr_job] = _pkX;
     pub_keysY[curr_job] = _pkY;
+    emit JobRegistered(_pkX, _pkY, curr_job);
     return curr_job;
   }
 
   function init_challenge(uint _job_id, uint _randomness) public returns(uint) {
-    randomness_inputs[_job_id] = _randomness;
-    uint block_number = block.number;
-    start_blocks[_job_id] = block_number;
-    return block_number;
+    randomness_inputs[_job_id] = keccak256(abi.encodePacked(_job_id, block.difficulty));
+    emit NewChallenge(_job_id, randomness_inputs[_job_id]);
+    uint block_timestamp = block.timestamp;
+    start_times[_job_id] = block_timestamp;
+    return block_timestamp;
   }
 
   function puz_accept(bytes32 data_hash) private view returns(bool) {
@@ -57,8 +63,8 @@ contract CKVerifier {
   }
 
   function verify(uint _job_id, uint nonce1, uint nonce2, uint response) public view returns (bool) {
-    uint aX = commitmentsX[_job_id];
-    uint aY = commitmentsY[_job_id];
+    uint[] aX = commitmentsX[_job_id];
+    uint[] aY = commitmentsY[_job_id];
     uint pkX = pub_keysX[_job_id];
     uint pkY = pub_keysY[_job_id];
     uint random_input = randomness_inputs[_job_id];
@@ -72,4 +78,37 @@ contract CKVerifier {
     }
     return zk_accept(aX, aY, uint(challenge), response, pkX, pkY);
   }
+	
+  // Bitcoin block struct containing everything
+  // accept BitcoinBlock[] - numberOfRounds in length or more
+  // [genTx0, genTx1, extraNonce1, extraNonce2] -> merkle hash, previousBlockHash, nonce, bits, nTime, version
+  // Instead of genTx1: have response, and remaining tx as arguments
+  //  	genTx1 = bytes.concat(response, remainingTx)
+  
+  function verify2(uint _job_id, BitcoinBlock[] blocks) public view returns (bool) {
+    require(blocks.length == numberOfRounds);
+    uint random_input = randomness_inputs[_job_id];
+    if (block.timestamp - start_times[_job_id] > time_threshold) {
+      return false;
+    }
+    // response = gentx1 (first 32 bytes)
+    // bitcoin block hash
+    for (.. bitcoin blocks) {
+	    bytes32 data_hash = sha256(abi.encode(form bitcoin header));
+	    if (!puz_accept(data_hash)) {
+	      return false;
+	    }
+    }
+    // challenge can be determined by all arguments except the response (just hash all arguments together, including randomness - concat at end)
+    for (i in ... bitcoin blocks) {
+	    bytes32 challenge_i = sha256(abi.encodePacked(s1, s2, random_input + i));
+	    uint aXi = commitmentsX[_job_id][i];
+	    uint aYi = commitmentsY[_job_id][i];
+	    uint pkX = pub_keysX[_job_id];
+	    uint pkY = pub_keysY[_job_id];
+	    return zk_accept(aXi, aYi, uint(challenge_i), response_i, pkX, pkY);
+    }
+    // Maybe emit Verify log for ease of use only
+  }
 }
+
