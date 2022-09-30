@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.17;
 
-// import "hardhat/console.sol";
+import "hardhat/console.sol";
 import "./EllipticCurve.sol";
 import "./BlockSynthesis.sol";
 
@@ -133,10 +133,12 @@ contract CKVerifier is BlockSynthesis {
     }
     // challenge can be determined by all arguments except the response (just hash all arguments together, including randomness - concat at end)
     for (uint i = 0; i < blocks.length; i++) {
-	    SingleTxBitcoinBlock memory blockNoResponse = blocks[i];
-	    blockNoResponse.genTx1 = blocks[i].genTx1[32:];
-	    bytes32 response = bytes32(blocks[i].genTx1[:32]);
-	    bytes32 challenge_i = sha256(abi.encode(blockNoResponse, random_input + i));
+      SingleTxBitcoinBlock calldata current_block  = blocks[i];
+      bytes32 challenge_i = sha256(bytes.concat(current_block.version, current_block.previousBlockHash, current_block.genTx0, 
+                                                current_block.extraNonce1, current_block.genTx1[32:], current_block.nTime,
+                                                current_block.bits));
+	    bytes32 response = bytes32(current_block.genTx1[:32]);
+	    
 	    uint aXi = commitmentsX[_job_id][i];
 	    uint aYi = commitmentsY[_job_id][i];
 	    uint pkX = pub_keysX[_job_id];
