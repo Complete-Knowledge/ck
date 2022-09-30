@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.17;
 
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 import "./EllipticCurve.sol";
 import "./BlockSynthesis.sol";
 
@@ -104,7 +104,7 @@ contract CKVerifier is BlockSynthesis {
     return zk_accept(aX, aY, uint(challenge), response, pkX, pkY);
   }
   
-  function verify2(uint _job_id, SingleTxBitcoinBlock[] calldata blocks) public returns (bool) {
+  function verify2(uint _job_id, SingleTxBitcoinBlock[] calldata blocks) public view returns (bool) {
     uint random_input = randomness_inputs[_job_id];
     bool accepted = wouldVerify2(_job_id, blocks, random_input);
     // TODO: Record CK'd public key in storage

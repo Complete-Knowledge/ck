@@ -56,10 +56,10 @@ contract BlockSynthesis {
   }
 
   function createCoinbaseTx(
-      bytes calldata genTx0,
+      bytes memory genTx0,
       bytes4 extraNonce1,
-      bytes calldata extraNonce2,
-      bytes calldata genTx1
+      bytes memory extraNonce2,
+      bytes memory genTx1
     ) public pure returns (bytes memory) {
     return bytes.concat(genTx0, extraNonce1, extraNonce2, genTx1);
   }
@@ -80,14 +80,14 @@ contract BlockSynthesis {
     return reverseBytes(headerPreReverse);
   }
   
-  function createSingleTxHeader(SingleTxBitcoinBlock calldata blockData) public pure returns (bytes memory) {
+  function createSingleTxHeader(SingleTxBitcoinBlock calldata  blockData) public pure returns (bytes memory) {
   	bytes memory coinbaseTx = createCoinbaseTx(blockData.genTx0, blockData.extraNonce1, blockData.extraNonce2, blockData.genTx1);
   	bytes32 merkleRoot = coinbaseHash(coinbaseTx);
   	return createBlockHeader(blockData.nonce, blockData.bits, blockData.nTime,
   		merkleRoot, blockData.previousBlockHash, blockData.version);
   }
   
-  function blockHash(bytes calldata blockHeader) public pure returns (bytes32) {
+  function blockHash(bytes memory blockHeader) public pure returns (bytes32) {
     return bytes32(reverseUint256(uint256(sha256d(blockHeader))));
   }
   
