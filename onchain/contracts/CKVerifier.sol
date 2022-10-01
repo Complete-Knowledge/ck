@@ -40,9 +40,10 @@ contract CKVerifier is BlockSynthesis {
   mapping (uint => uint) pub_keysX;
   mapping (uint => uint) pub_keysY;
   mapping (uint => uint) start_times;
+  mapping (address => bool) ck_addresses;
   
-  event NewJob(uint pubKeyX, uint pubKeyY, uint jobId);
-  event ChallengeInitialized(uint jobId, uint randomness, uint startTime);
+  event NewJob(uint indexed pubKeyX, uint indexed pubKeyY, uint indexed jobId);
+  event ChallengeInitialized(uint indexed jobId , uint indexed randomness, uint indexed startTime);
 
   constructor(uint _d, uint _tau, uint nRounds) {
     difficulty = _d;
@@ -83,31 +84,19 @@ contract CKVerifier is BlockSynthesis {
     return (gsX == rhsX) && (gsY == rhsY);
   }
   
-  // TODO: Remove this and wouldVerify function
-  function verify(uint _job_id, uint nonce1, uint nonce2, uint response) public view returns (bool) {
-  	return wouldVerify(_job_id, nonce1, nonce2, response, randomness_inputs[_job_id]);
+  function derive_address(uint _job_id) private view returns (address) {
+    uint pkx = pub_keysX[_job_id];
+    uint pky = pub_keysY[_job_id];
+    return address(uint160(uint256(keccak256(bytes.concat(bytes32(pkx), bytes32(pky))))));
   }
 
-  function wouldVerify(uint _job_id, uint nonce1, uint nonce2, uint response, uint random_input) public view returns (bool) {
-    uint aX = commitmentsX[_job_id][0];
-    uint aY = commitmentsY[_job_id][0];
-    uint pkX = pub_keysX[_job_id];
-    uint pkY = pub_keysY[_job_id];
-    bytes32 challenge = sha256(abi.encodePacked(nonce2, random_input));
-    if (block.timestamp - start_times[_job_id] > time_threshold) {
-      return false;
-    }
-    bytes32 data_hash = sha256(abi.encode(aX, aY, challenge, response, nonce1, nonce2));
-    if (!puz_accept(data_hash)) {
-      return false;
-    }
-    return zk_accept(aX, aY, uint(challenge), response, pkX, pkY);
-  }
-  
-  function verify2(uint _job_id, SingleTxBitcoinBlock[] calldata blocks) public view returns (bool) {
+  function verify2(uint _job_id, SingleTxBitcoinBlock[] calldata blocks) public returns (bool) {
     uint random_input = randomness_inputs[_job_id];
-    bool accepted = wouldVerify2(_job_id, blocks, random_input);
-    // TODO: Record CK'd public key in storage
+    bool accepted = wouldVerify2(_job_id, blocks, random_input); 
+    if (accepted) {
+      address addr = derive_address(_job_id);
+      ck_addresses[addr] = true;
+    }
     // Maybe emit Verify log for ease of use only
     return accepted;
   }
@@ -118,7 +107,7 @@ contract CKVerifier is BlockSynthesis {
   // Instead of genTx1: have response, and remaining tx as arguments
   //  	genTx1 = bytes.concat(response, remainingTx)
   
-  function wouldVerify2(uint _job_id, SingleTxBitcoinBlock[] calldata blocks, uint random_input) public view returns (bool) {
+  function wouldVerify2(uint _job_id, SingleTxBitcoinBlock[] calldata blocks, uint random_input) private view returns (bool) {
     require(blocks.length == numberOfRounds);
     if (block.timestamp - start_times[_job_id] > time_threshold) {
       return false;

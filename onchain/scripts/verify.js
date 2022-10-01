@@ -45,12 +45,15 @@ async function main() {
   await verifier.register_job([ax], [ay], pkx, pky);
   
   const randomness = 14;
-  start_block = await verifier.init_challenge(1);
+  challenge_tx = await verifier.init_challenge(1);
+  const receipt = await challenge_tx.wait()
+// Receipt should now contain the logs
+  console.log(receipt.logs)
   
   singleTxBitcoinBlock = [  genTx0, extraNonce1, extraNonce2, genTx1, nonce, nbits, nTime, previousBlockHash, nversion]
 
-  result = await verifier.wouldVerify2(1,  [singleTxBitcoinBlock], randomness);
-  console.log(result);
+  result = await verifier.verify2(1,  [singleTxBitcoinBlock]);
+  // console.log(result);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
