@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
+pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-pragma solidity ^0.8.17;
 
 interface ICKRegistry {
     function isCK(address owner) external returns (bool);
@@ -46,6 +46,6 @@ contract AtomicNFT is ERC721, Ownable {
         address to,
         uint256
     ) internal override {
-        require(ckRegistry.isCK(to), "Recipient's address needs to be verified with a CK proof");
+        require(ckRegistry.isCK(to), "Recipient needs a CK proof");
     }
 }
