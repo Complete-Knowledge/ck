@@ -72,9 +72,13 @@ contract CKVerifier is BlockSynthesis {
     return startTime;
   }
 
-  function puz_accept(bytes32 data_hash) private view returns(bool) {
+  function pow_accept(bytes32 data_hash) private view returns(bool) {
     if (difficulty == 0) return true;
-    return (uint(data_hash)) < (1 << (256 - difficulty));
+    if (blockDifficulty(data_hash) >= difficulty) {
+      return true;
+    }
+    return false;
+    // return (uint(data_hash)) < (1 << (256 - difficulty));
   }
 
   function zk_accept(uint aX, uint aY, uint challenge, uint response, uint pkX, uint pkY) private pure returns(bool) {
@@ -90,9 +94,9 @@ contract CKVerifier is BlockSynthesis {
     return address(uint160(uint256(keccak256(bytes.concat(bytes32(pkx), bytes32(pky))))));
   }
 
-  function verify2(uint _job_id, SingleTxBitcoinBlock[] calldata blocks) public returns (bool) {
+  function verify(uint _job_id, SingleTxBitcoinBlock[] calldata blocks) public returns (bool) {
     uint random_input = randomness_inputs[_job_id];
-    bool accepted = wouldVerify2(_job_id, blocks, random_input); 
+    bool accepted = wouldVerify(_job_id, blocks, random_input); 
     if (accepted) {
       address addr = derive_address(_job_id);
       ck_addresses[addr] = true;
@@ -107,7 +111,7 @@ contract CKVerifier is BlockSynthesis {
   // Instead of genTx1: have response, and remaining tx as arguments
   //  	genTx1 = bytes.concat(response, remainingTx)
   
-  function wouldVerify2(uint _job_id, SingleTxBitcoinBlock[] calldata blocks, uint random_input) private view returns (bool) {
+  function wouldVerify(uint _job_id, SingleTxBitcoinBlock[] calldata blocks, uint random_input) private view returns (bool) {
     require(blocks.length == numberOfRounds);
     if (block.timestamp - start_times[_job_id] > time_threshold) {
       return false;
@@ -116,7 +120,7 @@ contract CKVerifier is BlockSynthesis {
     // bitcoin block hash
     for (uint i = 0; i < blocks.length; i++) {
 	    bytes32 data_hash = blockHash(createSingleTxHeader(blocks[i]));
-	    if (!puz_accept(data_hash)) {
+	    if (!pow_accept(data_hash)) {
 	      return false;
 	    }
     }

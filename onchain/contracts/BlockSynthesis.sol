@@ -91,6 +91,6 @@ contract BlockSynthesis {
     }
 
     function blockDifficulty(bytes32 hash) public pure returns (uint256) {
-        return 0x00000000ffff0000000000000000000000000000000000000000000000000000 / uint256(hash);
+        return 0x00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff / uint256(hash);
     }
 }
