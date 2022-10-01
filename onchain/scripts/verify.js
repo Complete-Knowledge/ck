@@ -5,6 +5,7 @@
 // Runtime Environment's members available in the global scope.
 const hre = require("hardhat");
 const BigNumber = require('bignumber.js');
+const { version } = require("chai");
 
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
@@ -16,28 +17,37 @@ async function main() {
 
   // We get the contract to deploy
   const Verifier = await hre.ethers.getContractFactory("CKVerifier");
-  const verifier = await Verifier.deploy(2, 1000, 1);
+  const verifier = await Verifier.deploy(1, 1000, 1);
 
   await verifier.deployed();
 
   console.log("Verifer deployed to:", verifier.address);
 
-  ax = ethers.BigNumber.from("89565891926547004231252920425935692360644145829622209833684329913297188986597"); // 2G
-  ay = ethers.BigNumber.from("12158399299693830322967808612713398636155367887041628176798871954788371653930");
-  pkx = ethers.BigNumber.from("112711660439710606056748659173929673102114977341539408544630613555209775888121"); // 3G
-  pky = ethers.BigNumber.from("25583027980570883691656905877401976406448868254816295069919888960541586679410");
+  pkx = ethers.BigNumber.from("96243806373204481945601038032046653703220698319981937285552484200780161929369");
+  pky = ethers.BigNumber.from("38491887063126731616107561324549857553379482038905959648633452227158984216732");
+  
+  
+  ax = ethers.BigNumber.from("69322316609532738029407580266198485199451988812403823163625810273619274439640");
+  ay = ethers.BigNumber.from("13378712953394075803199026651505869426471977526372761219422905810209273267514");
+
+  genTx0 = "0x01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff2f02d301044781376305";
+  extraNonce1 = "0xdeadc0de";
+  extraNonce2 = "0x48";
+  genTx1 = "0x1c5c929ae2cb443d460be0d1663bdb35933cd6b226c02c9f5ef0b128dde7a34e4f00000000020000000000000000266a24aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8cf900f2052a01000000160014475a44069a4288f3df3048fb12926f27c63f157900000000";
+  nonce = "0x02570730";
+  nbits = "0x1d00ffff"
+  nTime = "0x633780f7"
+  previousBlockHash = "0x000000000002ea8eb35b9df5a5f7d3f7182d5226e4e9ab5399fe7582f0f9a9de"
+  nversion = "0x20000000"
 
   await verifier.register_job([ax], [ay], pkx, pky);
   
   const randomness = 10;
   start_block = await verifier.init_challenge(1);
-  //challenge = 0x5f112a25806694ac59cc10a9674b04cace29f2487ef2cf0441303f14b48946d6 from hashing
-  // group order = 115792089237316195423570985008687907852837564279074904382605163141518161494337
-  //response = (3*challenge  + 2) % group order
-  response = ethers.BigNumber.from("13208054462378716353836018817465374182937102629100531704803268528485859431235")
-  nonce1 = 58
-  nonce2 = 100
-  result = await verifier.wouldVerify(1, nonce1, nonce2, response, randomness);
+  
+  singleTxBitcoinBlock = [  genTx0, extraNonce1, extraNonce2, genTx1, nonce, nbits, nTime, previousBlockHash, nversion]
+
+  result = await verifier.wouldVerify2(1,  [singleTxBitcoinBlock], randomness);
   console.log(result);
 }
 
