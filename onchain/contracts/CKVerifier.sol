@@ -69,7 +69,7 @@ contract CKVerifier is BlockSynthesis {
   function init_challenge(uint _job_id) public returns(uint) {
     require(_job_id <= curr_job, "Job not registered");
     require(start_times[_job_id] == 0, "Challenge already initialized");
-    randomness_inputs[_job_id] = 0x2397dc017fad98b4324aff1282606563adcc82b5ca0a1f261bcd561e83767e79; //uint(keccak256(abi.encodePacked(_job_id, block.difficulty)));
+    randomness_inputs[_job_id] = uint(keccak256(abi.encodePacked(_job_id, block.difficulty)));
     uint startTime = block.timestamp;
     start_times[_job_id] = startTime;
     emit ChallengeInitialized(_job_id, randomness_inputs[_job_id], startTime);
@@ -102,7 +102,6 @@ contract CKVerifier is BlockSynthesis {
     require(start_times[_job_id] > 0, "Challenge not initiated");
     uint random_input = randomness_inputs[_job_id];
     bool accepted = wouldVerify(_job_id, blocks, random_input); 
-    console.log(accepted);
     if (accepted) {
       address addr = derive_address(_job_id);
       isCKVerified[addr] = true;
@@ -125,24 +124,19 @@ contract CKVerifier is BlockSynthesis {
     }
     // response = gentx1 (first 32 bytes)
     // bitcoin block hash
-    console.log('checking pow');
     for (uint i = 0; i < blocks.length; i++) {
 	    bytes32 data_hash = blockHash(createSingleTxHeader(blocks[i]));
-      console.logBytes32(data_hash);
 	    if (!pow_accept(data_hash)) {
 	      return false;
 	    }
-      console.log('Pow passed');
       if (blocks[i].extraNonce2.length > nonceRange) return false;
     }
-    console.log('checking zk');
     // challenge can be determined by all arguments except the response (just hash all arguments together, including randomness - concat at end)
     for (uint i = 0; i < blocks.length; i++) {
       SingleTxBitcoinBlock calldata current_block  = blocks[i];
       bytes32 challenge_i = sha256(bytes.concat(current_block.version, current_block.previousBlockHash, current_block.genTx0, 
                                                 current_block.extraNonce1, current_block.genTx1[32:], current_block.nTime,
                                                 current_block.bits, bytes32(random_input + i)));
-      console.logBytes32(challenge_i);
 	    bytes32 response = bytes32(current_block.genTx1[:32]);
 	    
 	    uint aXi = commitmentsX[_job_id][i];
@@ -150,7 +144,6 @@ contract CKVerifier is BlockSynthesis {
 	    uint pkX = pub_keysX[_job_id];
 	    uint pkY = pub_keysY[_job_id];
 	    if (!zk_accept(aXi, aYi, uint(challenge_i), uint(response), pkX, pkY)) {
-        console.log('arghhh');
 	    	return false;
 	    }
     }
