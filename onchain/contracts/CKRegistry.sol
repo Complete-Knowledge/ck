@@ -6,6 +6,17 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./SingleSlotBitArray.sol";
 
 /**
+ * @dev A contract that attests to proofs of complete knowledge
+ */
+interface ICKVerifier {
+    /**
+     * @dev Returns true if the address has shown a proof of complete knowledge
+     * to this verifier.
+     */
+    function isCKVerified(address addr) external returns (bool);
+}
+
+/**
  * @dev A registry containing addresses that have provided proofs of complete
  * knowledge.
  */
@@ -19,7 +30,7 @@ contract CKRegistry is Ownable {
     
     /**
      * @dev A bit array denoting which verification bits are accepted as evidence
-     * of a CK proof. This value can be updated to revoke permissions if a particular
+     * of a CK proof. This value can be updated to revoke proofs if a particular
      * CK verification method is deemed to be insecure in the future.
      *
      * If this value is set to 0 by the contract owner, then the `isCK` function would
@@ -56,7 +67,7 @@ contract CKRegistry is Ownable {
     /**
      * @dev Sets a verification bit as trusted or not.
      */
-    function trustVerificationBit(uint8 bit, bool trusted) onlyOwner public {
+    function trustVerificationBit(uint8 bit, bool trusted) public onlyOwner {
         SingleSlotBitArray.set(trustedVerificationBits, bit, trusted);
     }
     
@@ -66,7 +77,7 @@ contract CKRegistry is Ownable {
      * might share the same verification bit if they are very similar, e.g. for minor
      * contract upgrades.
      */
-    function assignVerifierAddress(address verifierAddress, uint8 bit) onlyOwner public {
+    function assignVerifierAddress(address verifierAddress, uint8 bit) public onlyOwner {
         verifierAddresses[verifierAddress] = uint256(bit) + 1;
     }
     
@@ -78,7 +89,7 @@ contract CKRegistry is Ownable {
      * true results for previous verifications but is not guaranteed to do
      * so in the future.
      */
-    function removeVerifierAddress(address verifierAddress) onlyOwner public {
+    function removeVerifierAddress(address verifierAddress) public onlyOwner {
         verifierAddresses[verifierAddress] = 0;
     }
     
@@ -86,10 +97,12 @@ contract CKRegistry is Ownable {
      * @dev Assigns the verification bit of an address that has provided a
      * proof of complete knowledge to a verifier.
      */
-    function recordProof(address addr) public {
-        uint256 vBitPlusOne = verifierAddresses[msg.sender];
-        require(vBitPlusOne > 0, "Only verifier addresses allowed");
+    function registerCK(address userAddress, ICKVerifier verifierAddress) public {
+        uint256 vBitPlusOne = verifierAddresses[address(verifierAddress)];
+        require(vBitPlusOne > 0, "CKRegistry: Verifier address is not authorized");
+        bool didVerify = verifierAddress.isCKVerified(userAddress);
+        require(didVerify, "CKRegistry: Verifier needs proof");
         uint8 vBit = uint8(vBitPlusOne - 1);
-        SingleSlotBitArray.set(verifications[addr], vBit, true);
+        SingleSlotBitArray.set(verifications[userAddress], vBit, true);
     }
 }
