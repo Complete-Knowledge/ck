@@ -29,6 +29,18 @@ module.exports = {   solidity: {
       version: "0.6.12",
     },
   ],   
-}, 
+},
+defaultNetwork: "localhost",
+  networks: {
+    hardhat: {
+    },
+    localhost: {
+      url: "http://localhost:8544"
+    },
+    rinkeby: {
+      url: "https://eth-rinkeby.alchemyapi.io/v2/123abc123abc123abc123abc123abcde",
+      // accounts: [privateKey1, privateKey2, ...]
+    }
+  }, 
 
 };

@@ -136,7 +136,8 @@ contract CKVerifier is BlockSynthesis {
       SingleTxBitcoinBlock calldata current_block  = blocks[i];
       bytes32 challenge_i = sha256(bytes.concat(current_block.version, current_block.previousBlockHash, current_block.genTx0, 
                                                 current_block.extraNonce1, current_block.genTx1[32:], current_block.nTime,
-                                                current_block.bits));
+                                                current_block.bits, bytes32(random_input + i)));
+
 	    bytes32 response = bytes32(current_block.genTx1[:32]);
 	    
 	    uint aXi = commitmentsX[_job_id][i];
