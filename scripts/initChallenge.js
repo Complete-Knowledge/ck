@@ -4,7 +4,7 @@ fs = require('fs')
 
 async function main() {
 
-  contract_address = "0xAC86fD0d5293F8E5c412b569FCB10F8d5DB39f4b"
+  contract_address = "0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E"
   job_id = 1
 
   const MyContract = await ethers.getContractFactory("CKVerifier");
@@ -20,7 +20,7 @@ console.log(receipt.logs[0])
 // Receipt should now contain the logs
 randomness = receipt.logs[0]['topics'][2].slice(2)
 console.log(randomness)
-fs.writeFileSync('../randomness.txt', randomness);
+fs.writeFileSync('randomness.txt', randomness);
   
 }
 
