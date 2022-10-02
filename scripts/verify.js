@@ -56,7 +56,7 @@ async function main() {
 
 
   
-  const jsonString = fs.readFileSync("../result.json", "utf-8", "r")  
+  const jsonString = fs.readFileSync("result.json", "utf-8", "r")
 
     const blocks = JSON.parse(jsonString)
     console.log(blocks)
