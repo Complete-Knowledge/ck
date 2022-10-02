@@ -3,20 +3,18 @@
 //
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
-const hre = require("hardhat");
-const ethers = require("ethers");
-const BigNumber = ethers.BigNumber;
+const hre = require('hardhat');
 
 async function main() {
-  const nftFactory = await hre.ethers.getContractFactory("AtomicNFT");
+  const nftFactory = await hre.ethers.getContractFactory('AtomicNFT');
   // TODO: Create CKRegistry
-  const nft = await nftFactory.deploy("0x0000000000000000000000000000000000000000");
+  const nft = await nftFactory.deploy('0x0000000000000000000000000000000000000000');
 
   await nft.deployed();
   const receipt = await nft.deployTransaction.wait();
-  console.log("Deployment cost:", receipt.gasUsed.toNumber());
-  console.log("AtomicNFT deployed at " + nft.address);
-  console.log("NFT name:", await nft.name(), "\tSymbol:", await nft.symbol());
+  console.log('Deployment cost:', receipt.gasUsed.toNumber());
+  console.log(`AtomicNFT deployed at ${nft.address}`);
+  console.log('NFT name:', await nft.name(), '\tSymbol:', await nft.symbol());
   // TODO: Mint tokens
   // const tokenId = 0;
   // console.log("Token URI of token", tokenId + ":", await nft.tokenURI(tokenId));

@@ -1,16 +1,15 @@
-const hre = require("hardhat");
+const hre = require('hardhat');
 
 async function main() {
-   
-  const Lock = await hre.ethers.getContractFactory("CKVerifier");
+  const Lock = await hre.ethers.getContractFactory('CKVerifier');
   const lock = await Lock.deploy(3026, 62, 5, 1);
 
   await lock.deployed();
 
   console.log(
-    `Deployed!`
+    'Deployed!',
   );
-  console.log(lock.address)
+  console.log(lock.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
@@ -19,4 +18,3 @@ main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
-
