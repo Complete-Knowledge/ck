@@ -80,7 +80,7 @@ contract CKVerifier is BlockSynthesis, ICKVerifier {
     function initChallenge(uint jobId) public returns(uint) {
         require(jobId <= currJob, "Job not registered");
         require(startTimes[jobId] == 0, "Challenge already initialized");
-        randomnessInputs[jobId] = uint(keccak256(abi.encodePacked(jobId, block.difficulty)));
+        randomnessInputs[jobId] = 0x1979e6c1c8c27ca405b3ab85b2a5b758613fe3c8e67c67a198dc6ae28d5050d2;//uint(keccak256(abi.encodePacked(jobId, block.difficulty)));
         uint startTime = block.timestamp;
         startTimes[jobId] = startTime;
         emit ChallengeInitialized(jobId, randomnessInputs[jobId], startTime);

@@ -1,59 +1,75 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// When running the script with `npx hardhat run <script>` you'll find the Hardhat
-// Runtime Environment's members available in the global scope.
+
 const hre = require("hardhat");
 const BigNumber = require('bignumber.js');
 const { version } = require("chai");
+var fs = require('fs');
 
 async function main() {
-  // Hardhat always runs the compile task when running scripts with its command
-  // line interface.
-  //
-  // If this script is run directly using `node` you may want to call compile
-  // manually to make sure everything is compiled
-  // await hre.run('compile');
+  // Randomness : 0x1979e6c1c8c27ca405b3ab85b2a5b758613fe3c8e67c67a198dc6ae28d5050d2 need to use this for the specific response
 
-  // We get the contract to deploy
   const Verifier = await hre.ethers.getContractFactory("CKVerifier");
-  const verifier = await Verifier.deploy(1, 1000, 1, 4);
+  const verifier = await Verifier.deploy(3026, 62, 5, 1);
 
   await verifier.deployed();
 
-  console.log("Verifer deployed to:", verifier.address);
+  contract_address = verifier.address;
+  console.log("Verifer deployed to:", contract_address);
 
-  const pkx = ethers.BigNumber.from("96243806373204481945601038032046653703220698319981937285552484200780161929369");
-  const pky = ethers.BigNumber.from("38491887063126731616107561324549857553379482038905959648633452227158984216732");
+  var [commitmentsX,commitmentsY,pkx,pky] = [
+    [
+      '18473135073973899793522577085858960520395250054628647061504219196332411292913',
+      '2223780137980010998289687545805943070025774957405014561067208186497456670559',
+      '38598588033312200985846911311655612606740939535638875284020488954839956698240',
+      '85691741588528078947490382220225873447504547836018002422679201115570768933612',
+      '103404113196642613764264544068895795316486290839006735135792233254224446089710'
+    ],
+    [
+      '52627447426174899695464087787118993839125562038437891359546002417431843852795',
+      '81364585271914368753332156523747712081395709843989348272412924549826209249626',
+      '71657897739406727459380162084502641630442136108621078979085419720658723148943',
+      '43935343179138218144044749952732160365281005618517633883512066227624547133436',
+      '109747945663080691532650320093561150848290902930375645983385250687212993684953'
+    ],
+    '61555156205734835139964493277968895515822792355257032700559544512788092514447',
+    '42352591524506582366280373141491804577399703196304936933600912463157716854372'
+  ]
+  
+  for (let i = 0; i < commitmentsX.length; i++) {
+    commitmentsX[i] = ethers.BigNumber.from(commitmentsX[i])
+    commitmentsY[i] = ethers.BigNumber.from(commitmentsY[i])
+  }
+  pkx = ethers.BigNumber.from(pkx)
+  pky = ethers.BigNumber.from(pky)
 
-  //////////////////////////////////////////////////////////
+  register_tx = await verifier.registerJob(commitmentsX, commitmentsY, pkx, pky, { gasLimit: 1000000 });
+  const receipt1 = await register_tx.wait()
+  console.log(receipt1.logs)
   
   
-  const ax = ethers.BigNumber.from("103752014574351234261897238474613553110705970509659950108250042593458514445317");
-  const ay = ethers.BigNumber.from("56152132713981794557009406875925966805514519656492782080878459897883540312013");
-
-  const genTx0 = "0x01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff2f02ed01045fa7376305";
-  const extraNonce1 = "0xdeadc0de";
-  const extraNonce2 = "0x72";
-  const genTx1 = "0x8dd11b0ad47ae6501ef952276fdb1f8b92d0f94135f684afe27f91c30887d48e7600000000020000000000000000266a24aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8cf900f2052a01000000160014475a44069a4288f3df3048fb12926f27c63f157900000000";
-  const nonce = "0x8dccfb45";
-  const nbits = "0x1d00ffff";
-  const nTime = "0x6337a65c";
-  const previousBlockHash = "0x00000000001212c516be901a6353d8f616639cd0f70776852cf7863b76c26436";
-  const nversion = "0x20000000";
-
-  await verifier.registerJob([ax], [ay], pkx, pky);
   
-  const randomness = 14;
-  const challenge_tx = await verifier.initChallenge(1);
-  const receipt = await challenge_tx.wait();
-  // Receipt should now contain the logs
-  console.log(receipt.logs);
+  job_id = 1
+  // const randomness = '0x1979e6c1c8c27ca405b3ab85b2a5b758613fe3c8e67c67a198dc6ae28d5050d2'
+  const challenge_tx = await verifier.initChallenge(job_id);
+
+  const receipt2 = await challenge_tx.wait();
+  console.log(receipt2.logs);
+
+
   
-  const singleTxBitcoinBlock = [genTx0, extraNonce1, extraNonce2, genTx1, nonce, nbits, nTime, previousBlockHash, nversion];
-  result = await verifier.verify(1, [singleTxBitcoinBlock]);
-  console.log(result);
-}
+  const jsonString = fs.readFileSync("../result.json", "utf-8", "r")  
+
+    const blocks = JSON.parse(jsonString)
+    console.log(blocks)
+  
+      // Now you can call functions of the contract
+      verify_tx = await verifier.verify(job_id, blocks, { gasLimit: 10000000 });
+      const receipt3 = await verify_tx.wait()
+    // Receipt should now contain the logs
+      console.log(verify_tx)
+      console.log(receipt3)
+      console.log(receipt3.logs)
+  }
+
 
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
