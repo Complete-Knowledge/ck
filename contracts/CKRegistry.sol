@@ -49,6 +49,25 @@ contract CKRegistry is Ownable {
     mapping (address => uint256) public verifierAddresses;
     
     /**
+     * @dev Emitted when an address becomes a verifier for a specific verification bit
+     */
+    event VerifierAssigned(address indexed verifier, uint8 indexed bit);
+    
+    /**
+     * @dev Emitted when an address is removed from the verifiers set
+     */
+    event VerifierRemoved(address indexed verifier);
+    
+    /**
+     * @dev Emitted when an address successfully sets a verification bit
+     */
+    event VerificationBitSet(
+        address indexed userAddress,
+        ICKVerifier indexed verifierAddress,
+        uint8 indexed vBit
+    );
+    
+    /**
      * @dev Returns whether a particular address has provided a proof of complete
      * knowledge per the current state of trust given by `trustedVerificationBits`.
      */
@@ -79,6 +98,7 @@ contract CKRegistry is Ownable {
      */
     function assignVerifierAddress(address verifierAddress, uint8 bit) public onlyOwner {
         verifierAddresses[verifierAddress] = uint256(bit) + 1;
+        emit VerifierAssigned(verifierAddress, bit);
     }
     
     /**
@@ -91,6 +111,7 @@ contract CKRegistry is Ownable {
      */
     function removeVerifierAddress(address verifierAddress) public onlyOwner {
         verifierAddresses[verifierAddress] = 0;
+        emit VerifierRemoved(verifierAddress);
     }
     
     /**
@@ -104,5 +125,6 @@ contract CKRegistry is Ownable {
         require(didVerify, "CKRegistry: Verifier needs proof");
         uint8 vBit = uint8(vBitPlusOne - 1);
         SingleSlotBitArray.set(verifications[userAddress], vBit, true);
+        emit VerificationBitSet(userAddress, verifierAddress, vBit);
     }
 }

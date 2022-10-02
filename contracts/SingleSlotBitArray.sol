@@ -16,7 +16,7 @@ library SingleSlotBitArray {
     /**
      * @dev Returns whether the bit at `index` is set.
      */
-    function get(BitArray256 storage bitArray, uint8 index) public view returns (bool) {
+    function get(BitArray256 storage bitArray, uint8 index) internal view returns (bool) {
         uint256 mask = 1 << (index & 0xff);
         return bitArray.storedValue & mask != 0;
     }
@@ -24,7 +24,7 @@ library SingleSlotBitArray {
     /**
      * @dev Sets the bit at `index` to the boolean `value`.
      */
-    function set(BitArray256 storage bitArray, uint8 index, bool value) public {
+    function set(BitArray256 storage bitArray, uint8 index, bool value) internal {
         uint256 mask = 1 << (index & 0xff);
         if (value) {
             // Set the bit
