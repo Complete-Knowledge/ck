@@ -80,7 +80,7 @@ contract CKVerifier is BlockSynthesis, ICKVerifier {
     function initChallenge(uint jobId) public returns(uint) {
         require(jobId <= currJob, "Job not registered");
         require(startTimes[jobId] == 0, "Challenge already initialized");
-        randomnessInputs[jobId] = 0x1979e6c1c8c27ca405b3ab85b2a5b758613fe3c8e67c67a198dc6ae28d5050d2;//uint(keccak256(abi.encodePacked(jobId, block.difficulty)));
+        randomnessInputs[jobId] = uint(keccak256(abi.encodePacked(jobId, block.difficulty)));
         uint startTime = block.timestamp;
         startTimes[jobId] = startTime;
         emit ChallengeInitialized(jobId, randomnessInputs[jobId], startTime);
@@ -107,56 +107,34 @@ contract CKVerifier is BlockSynthesis, ICKVerifier {
 
     function verify(uint jobId, SingleTxBitcoinBlock[] calldata blocks) public returns (bool) {
         require(startTimes[jobId] > 0, "Challenge not initiated");
-        uint randomInput = randomnessInputs[jobId];
-        bool accepted = wouldVerify(jobId, blocks, randomInput); 
-        if (accepted) {
-            address addr = deriveAddress(jobId);
-            isCKVerified[addr] = true;
-            emit CKVerified(jobId, addr);
-        }
-        // Maybe emit Verify log for ease of use only
-        return accepted;
-    }
-	
-    // Bitcoin block struct containing everything
-    // accept BitcoinBlock[] - numberOfRounds in length or more
-    // [genTx0, genTx1, extraNonce1, extraNonce2] -> merkle hash, previousBlockHash, nonce, bits, nTime, version
-    // Instead of genTx1: have response, and remaining tx as arguments
-    //    	genTx1 = bytes.concat(response, remainingTx)
-    
-    function wouldVerify(uint jobId, SingleTxBitcoinBlock[] calldata blocks, uint randomInput) public view returns (bool) {
         require(blocks.length == numberOfRounds);
-        if (block.timestamp - startTimes[jobId] > timeThreshold) {
-            return false;
-        }
+        require(block.timestamp - startTimes[jobId] <= timeThreshold, "Time threshold exceeded");
         // response = gentx1 (first 32 bytes)
         // bitcoin block hash
         for (uint i = 0; i < blocks.length; i++) {
-	        bytes32 dataHash = blockHash(createSingleTxHeader(blocks[i]));
-	        if (!powAccept(dataHash)) {
-	            return false;
-	        }
-	        if (blocks[i].extraNonce2.length > nonceRange) {
-	            return false;
-	        }
+            bytes32 dataHash = blockHash(createSingleTxHeader(blocks[i]));
+            require(powAccept(dataHash), "Block difficulty not high enough");
+            require(blocks[i].extraNonce2.length <= nonceRange, "extraNonce2 size incorrect");
         }
-        // challenge can be determined by all arguments except the response (just hash all arguments together, including randomness - concat at end)
+        // Check all rounds at once
+        uint randomInput = randomnessInputs[jobId];
         for (uint i = 0; i < blocks.length; i++) {
             SingleTxBitcoinBlock calldata currentBlock = blocks[i];
             bytes32 challenge = sha256(bytes.concat(currentBlock.version, currentBlock.previousBlockHash,
                 currentBlock.genTx0, currentBlock.extraNonce1, currentBlock.genTx1[32:],
                 currentBlock.nTime, currentBlock.bits, bytes32(randomInput + i)));
 
-	        bytes32 response = bytes32(currentBlock.genTx1[:32]);
-	        
-	        uint aXi = commitmentsX[jobId][i];
-	        uint aYi = commitmentsY[jobId][i];
-	        uint pkX = pubKeysX[jobId];
-	        uint pkY = pubKeysY[jobId];
-	        if (!zkAccept(aXi, aYi, uint(challenge), uint(response), pkX, pkY)) {
-	        	return false;
-	        }
+            bytes32 response = bytes32(currentBlock.genTx1[:32]);
+
+            uint aXi = commitmentsX[jobId][i];
+            uint aYi = commitmentsY[jobId][i];
+            uint pkX = pubKeysX[jobId];
+            uint pkY = pubKeysY[jobId];
+            require(zkAccept(aXi, aYi, uint(challenge), uint(response), pkX, pkY), "Incorrect proof");
         }
+        address addr = deriveAddress(jobId);
+        isCKVerified[addr] = true;
+        emit CKVerified(jobId, addr);
         return true;
     }
 }
