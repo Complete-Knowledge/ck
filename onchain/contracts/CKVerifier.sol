@@ -54,7 +54,7 @@ contract CKVerifier is BlockSynthesis, ICKVerifier {
     mapping (address => bool) public isCKVerified;
     
     event NewJob(uint indexed jobId, uint indexed pubKeyX, uint indexed pubKeyY);
-    event ChallengeInitialized(uint indexed jobId, uint randomness, uint startTime);
+    event ChallengeInitialized(uint indexed jobId, uint indexed randomness, uint startTime);
     event CKVerified(uint indexed jobId, address indexed addr);
 
     constructor(uint _d, uint _tau, uint nRounds, uint _nonceRange) {
