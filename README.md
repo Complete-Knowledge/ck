@@ -17,6 +17,13 @@ To lint the smart contracts, run
 node ./node_modules/solhint/solhint.js './contracts/**/*.sol'
 ```
 
+To lint Javascript scripts and tests, run
+```
+npm run lint
+# Fix some linting errors automatically
+npm run lint -- --fix
+```
+
 ### Bitcoin Block Verification
 To test out the Bitcoin block verification tools, run
 ```shell
