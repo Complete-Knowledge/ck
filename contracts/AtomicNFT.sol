@@ -2,6 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
@@ -13,7 +14,7 @@ interface ICKRegistry {
 /**
  * @dev An "Atomic" NFT contract that requires a proof of complete knowledge from each token recipient.
  */
-contract AtomicNFT is ERC721, Ownable {
+contract AtomicNFT is ERC721, ERC721Enumerable, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIdCounter;
     ICKRegistry public immutable ckRegistry;
@@ -33,6 +34,13 @@ contract AtomicNFT is ERC721, Ownable {
      */
     function _baseURI() internal pure override returns (string memory) {
         return "https://nftato.ms/api/atom/";
+    }
+    
+    /**
+     * @dev Returns information about the collection
+     */
+    function contractURI() public pure returns (string memory) {
+        return "https://nftato.ms/api/collection-metadata";
     }
     
     /**
@@ -83,6 +91,13 @@ contract AtomicNFT is ERC721, Ownable {
     function ownerMint(address to) public onlyOwner {
         _limitedMint(to);
     }
+    
+    /**
+     * @dev Get the current token count
+     */
+    function tokenCount() public view returns (uint256) {
+        return _tokenIdCounter.current();
+    }
 
     /**
      * @dev Hook that is called before any token transfer. This includes minting
@@ -92,10 +107,19 @@ contract AtomicNFT is ERC721, Ownable {
      * have complete knowledge of its private key. The sender is not checked.
      */
     function _beforeTokenTransfer(
-        address,
+        address from,
         address to,
-        uint256
-    ) internal override {
+        uint256 tokenId
+    ) internal override(ERC721, ERC721Enumerable) {
+        super._beforeTokenTransfer(from, to, tokenId);
         require(ckRegistry.isCK(to), "Recipient needs a CK proof");
+    }
+    
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721, ERC721Enumerable)
+        returns (bool) {
+        return super.supportsInterface(interfaceId);
     }
 }
