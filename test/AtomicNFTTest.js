@@ -5,6 +5,7 @@ const { ethers } = require('hardhat');
 
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
+const fs = require('fs');
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -130,6 +131,16 @@ describe('AtomicNFT', () => {
       await expect(atomicNFT.connect(verifiedAccount)['transferFrom(address,address,uint256)'](verifiedAccount.address, otherAccount.address, tokenId))
         .to.not.be.reverted;
       await expect(atomicNFT.ownerOf(tokenId)).to.eventually.equal(otherAccount.address);
+    });
+  });
+
+  describe('Source code', () => {
+    it('Should produce source code', async () => {
+      const { atomicNFT } = await loadFixture(deployNFTFixture);
+      const cmapUtilsPy = await atomicNFT.sourceCodeCmapUtilsPy();
+      fs.writeFile('./artifacts/cmap_utils.py', cmapUtilsPy, () => {});
+      const atomicNFTPy = await atomicNFT.sourceCodeAtomicNftPy();
+      fs.writeFile('./artifacts/atomic_nft.py', atomicNFTPy, () => {});
     });
   });
 });

@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
+import "./AtomicNFTImageGenerationSource.sol";
+
 interface ICKRegistry {
     function isCK(address owner) external returns (bool);
 }
@@ -14,13 +16,30 @@ interface ICKRegistry {
 /**
  * @dev An "Atomic" NFT contract that requires a proof of complete knowledge from each token recipient.
  */
-contract AtomicNFT is ERC721, ERC721Enumerable, Ownable {
+contract AtomicNFT is ERC721, Ownable, AtomicNFTImageGenerationSource {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIdCounter;
+    
+    /**
+     * @dev The registry contract that determines if an address has provided
+     * a proof of complete knowledges
+     */
     ICKRegistry public immutable ckRegistry;
     
+    /**
+     * @dev A fee on each open mint as a deterrant for scalping
+     */
     uint256 public mintFee;
+    
+    /**
+     * @dev If enabled, addresses with a proof of complete knowledge will
+     * be able to mint NFTs using the `mint` function.
+     */
     bool public openMintingEnabled = false;
+    
+    /**
+     * @dev The total collection size after all NFTs have been minted
+     */
     uint256 public immutable collectionSize;
     
     constructor(ICKRegistry _ckRegistry, uint256 _collectionSize, uint256 _mintFee) ERC721("Atoms", "ATM") {
@@ -110,16 +129,8 @@ contract AtomicNFT is ERC721, ERC721Enumerable, Ownable {
         address from,
         address to,
         uint256 tokenId
-    ) internal override(ERC721, ERC721Enumerable) {
+    ) internal override(ERC721) {
         super._beforeTokenTransfer(from, to, tokenId);
         require(ckRegistry.isCK(to), "Recipient needs a CK proof");
-    }
-    
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(ERC721, ERC721Enumerable)
-        returns (bool) {
-        return super.supportsInterface(interfaceId);
     }
 }
