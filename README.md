@@ -24,6 +24,11 @@ npm run lint
 npm run lint -- --fix
 ```
 
+To run smart contract test cases, run
+```
+npx hardhat test
+```
+
 ### Bitcoin Block Verification
 To test out the Bitcoin block verification tools, run
 ```shell
