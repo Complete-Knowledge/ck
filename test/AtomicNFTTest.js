@@ -143,4 +143,11 @@ describe('AtomicNFT', () => {
       fs.writeFile('./artifacts/atomic_nft.py', atomicNFTPy, () => {});
     });
   });
+
+  describe('Interfaces', () => {
+    it('Should support the ERC-721 Metadata interface', async () => {
+      const { atomicNFT } = await loadFixture(deployNFTFixture);
+      await expect(atomicNFT.supportsInterface('0x5b5e139f')).to.eventually.equal(true);
+    });
+  });
 });
