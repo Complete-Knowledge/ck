@@ -18,38 +18,72 @@ contract AtomicNFT is ERC721, Ownable {
     Counters.Counter private _tokenIdCounter;
     ICKRegistry public immutable ckRegistry;
     
-    uint256 mintFee;
+    uint256 public mintFee;
+    bool public openMintingEnabled = false;
+    uint256 public immutable collectionSize;
     
-    constructor(ICKRegistry _ckRegistry, uint256 _mintFee) ERC721("Atoms", "ATM") {
+    constructor(ICKRegistry _ckRegistry, uint256 _collectionSize, uint256 _mintFee) ERC721("Atoms", "ATM") {
         ckRegistry = _ckRegistry;
         mintFee = _mintFee;
+        collectionSize = _collectionSize;
     }
 
     /**
      * @dev Returns the base URI of the NFT
      */
     function _baseURI() internal pure override returns (string memory) {
-        return "https://nftato.ms/atom/";
+        return "https://nftato.ms/api/atom/";
     }
     
     /**
-     * @dev Sets the mint fee
+     * @dev Sets the mint fee, which would exist only to limit the number of
+     * NFTs minted per address if open minting is enabled.
      */
     function setMintFee(uint256 newMintFee) public onlyOwner {
-    	mintFee = newMintFee;
+        mintFee = newMintFee;
+    }
+    
+    /**
+     * @dev Enables or disables open minting by any CK'd address
+     */
+    function setOpenMintingEnabled(bool enabled) public onlyOwner {
+        openMintingEnabled = enabled;
+    }
+    
+    /**
+     * @dev Transfers all collected minting fees to another address
+     */
+    function transferMintingFees(address payable to) public onlyOwner {
+        require(to.send(address(this).balance), "Failed to transfer minting fees");
     }
 
     /**
-     * @dev An owner-only mint function
+     * @dev Mint a limited supply NFT
      */
-    function safeMint(address to, uint256 tokenId) public payable {
-    	require(msg.value >= mintFee, "Minimum mint fee not met");
+    function _limitedMint(address to) internal {
         uint256 tokenId = _tokenIdCounter.current();
-        require(tokenId < 10000, "All atomic NFTs have been minted");
         _tokenIdCounter.increment();
+        require(tokenId < collectionSize, "All atomic NFTs have been minted");
         _safeMint(to, tokenId);
     }
-    
+
+    /**
+     * @dev Mint an atomic NFT to an address that has shown a CK proof
+     */
+    function mint() public payable {
+        require(msg.value >= mintFee, "Minimum mint fee not met");
+        require(openMintingEnabled, "Open minting not enabled");
+        require(ckRegistry.isCK(msg.sender), "Minter needs a CK proof");
+        _limitedMint(msg.sender);
+    }
+
+    /**
+     * @dev Owner can mint an atomic NFT to an address that has shown a CK proof
+     */
+    function ownerMint(address to) public onlyOwner {
+        _limitedMint(to);
+    }
+
     /**
      * @dev Hook that is called before any token transfer. This includes minting
      * and burning.
