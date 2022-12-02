@@ -88,13 +88,6 @@ contract AtomicNFT is ERC721, Ownable, AtomicNFTImageGenerationSource {
     function setOpenMintingEnabled(bool enabled) public onlyOwner {
         openMintingEnabled = enabled;
     }
-    
-    /**
-     * @dev Transfers all collected minting fees to another address
-     */
-    function transferMintingFees(address payable to) public onlyOwner {
-        require(to.send(address(this).balance), "Failed to transfer minting fees");
-    }
 
     /**
      * @dev Mint a limited supply NFT
