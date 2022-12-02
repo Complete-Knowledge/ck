@@ -88,6 +88,13 @@ describe('AtomicNFT', () => {
       await atomicNFT.connect(verifiedAccount).mint({ value: mintFee });
       await expect(ethers.provider.getBalance(feeRecipient)).to.eventually
         .equal(previousFeeRecipientBalance.add(mintFee));
+      
+      // Set a new recipient
+      await atomicNFT.setMintFeeRecipient(otherAccount.address);
+      const previousFeeRecipientBalance2 = await ethers.provider.getBalance(otherAccount.address);
+      await atomicNFT.connect(verifiedAccount).mint({ value: mintFee });
+      await expect(ethers.provider.getBalance(otherAccount.address)).to.eventually
+        .equal(previousFeeRecipientBalance2.add(mintFee));
     });
     it('Should enforce a maximum collection size', async () => {
       const { atomicNFT, verifiedAccount } = await loadFixture(deployNFTFixture);
