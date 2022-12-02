@@ -17,6 +17,7 @@ describe('AtomicNFT', () => {
   async function deployNFTFixture() {
     // Contracts are deployed using the first signer/account by default
     const [owner, verifiedAccount, otherAccount] = await ethers.getSigners();
+    const feeRecipient = "0x00000000000000000000000000000000000000ff";
 
     const Registry = await ethers.getContractFactory('CKRegistry');
     const registry = await Registry.deploy();
@@ -32,10 +33,11 @@ describe('AtomicNFT', () => {
 
     const NFTFactory = await ethers.getContractFactory('AtomicNFT');
     // We will set the collection size to 19 for testing
-    const atomicNFT = await NFTFactory.deploy(registry.address, 19, 0);
+    const atomicNFT = await NFTFactory.deploy(registry.address, 19, 0, feeRecipient);
 
     return {
       atomicNFT, registry, verifier, owner, verifiedAccount, otherAccount,
+      feeRecipient
     };
   }
 
@@ -75,20 +77,17 @@ describe('AtomicNFT', () => {
         .to.not.be.reverted;
       await expect(atomicNFT.ownerOf(0)).to.eventually.equal(verifiedAccount.address);
     });
-    it('Should allow minting fees to be withdrawn', async () => {
-      const { atomicNFT, verifiedAccount, otherAccount } = await loadFixture(deployNFTFixture);
-      await atomicNFT.setMintFee(ethers.utils.parseEther('0.1'));
+    it('Should pay minting fees to the fee recipient', async () => {
+      const { atomicNFT, verifiedAccount, otherAccount, feeRecipient } = await
+        loadFixture(deployNFTFixture);
+      const previousFeeRecipientBalance = await ethers.provider.getBalance(feeRecipient);
+      const mintFee = ethers.utils.parseEther('0.1');
+      // Mint
+      await atomicNFT.setMintFee(mintFee);
       await atomicNFT.setOpenMintingEnabled(true);
-      await atomicNFT.connect(verifiedAccount).mint({ value: ethers.utils.parseEther('0.1') });
-
-      // Minting fee can be taken out
-      const prevBalance = await ethers.provider.getBalance(otherAccount.address);
-      await atomicNFT.transferMintingFees(otherAccount.address);
-      await expect(ethers.provider.getBalance(otherAccount.address)).to.eventually.equal(
-        prevBalance.add(ethers.utils.parseEther('0.1')),
-      );
-      await expect(ethers.provider.getBalance(atomicNFT.address))
-        .to.eventually.equal(ethers.BigNumber.from(0));
+      await atomicNFT.connect(verifiedAccount).mint({ value: mintFee });
+      await expect(ethers.provider.getBalance(feeRecipient)).to.eventually
+        .equal(previousFeeRecipientBalance.add(mintFee));
     });
     it('Should enforce a maximum collection size', async () => {
       const { atomicNFT, verifiedAccount } = await loadFixture(deployNFTFixture);

@@ -31,6 +31,11 @@ contract AtomicNFT is ERC721, Ownable, AtomicNFTImageGenerationSource {
     uint256 public mintFee;
     
     /**
+     * @dev The recipient of mint fees
+     */
+    address payable mintFeeRecipient;
+    
+    /**
      * @dev If enabled, addresses with a proof of complete knowledge will
      * be able to mint NFTs using the `mint` function.
      */
@@ -41,10 +46,11 @@ contract AtomicNFT is ERC721, Ownable, AtomicNFTImageGenerationSource {
      */
     uint256 public immutable collectionSize;
     
-    constructor(ICKRegistry _ckRegistry, uint256 _collectionSize, uint256 _mintFee) ERC721("Atoms", "ATM") {
+    constructor(ICKRegistry _ckRegistry, uint256 _collectionSize, uint256 _mintFee, address payable _mintFeeRecipient) ERC721("Atoms", "ATM") {
         ckRegistry = _ckRegistry;
-        mintFee = _mintFee;
         collectionSize = _collectionSize;
+        mintFee = _mintFee;
+        mintFeeRecipient = _mintFeeRecipient;
     }
 
     /**
@@ -67,6 +73,13 @@ contract AtomicNFT is ERC721, Ownable, AtomicNFTImageGenerationSource {
      */
     function setMintFee(uint256 newMintFee) public onlyOwner {
         mintFee = newMintFee;
+    }
+    
+    /**
+     * @dev Sets the recipient of mint fees.
+     */
+    function setMintFeeRecipient(address payable newRecipient) public onlyOwner {
+        mintFeeRecipient = newRecipient;
     }
     
     /**
@@ -98,6 +111,7 @@ contract AtomicNFT is ERC721, Ownable, AtomicNFTImageGenerationSource {
      */
     function mint() public payable {
         require(msg.value >= mintFee, "Minimum mint fee not met");
+        mintFeeRecipient.transfer(address(this).balance);
         require(openMintingEnabled, "Open minting not enabled");
         require(ckRegistry.isCK(msg.sender), "Minter needs a CK proof");
         _limitedMint(msg.sender);
