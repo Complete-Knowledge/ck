@@ -19,9 +19,12 @@ contract AtomicNFT is ERC721, Ownable, AtomicNFTImageGenerationSource {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIdCounter;
     
+    string private _contractURI;
+    string private baseURI;
+    
     /**
      * @dev The registry contract that determines if an address has provided
-     * a proof of complete knowledges
+     * a proof of complete knowledge
      */
     ICKRegistry public immutable ckRegistry;
     
@@ -46,25 +49,41 @@ contract AtomicNFT is ERC721, Ownable, AtomicNFTImageGenerationSource {
      */
     uint256 public immutable collectionSize;
     
-    constructor(ICKRegistry _ckRegistry, uint256 _collectionSize, uint256 _mintFee, address payable _mintFeeRecipient) ERC721("Atoms", "ATM") {
+    constructor(ICKRegistry _ckRegistry, uint256 _collectionSize, uint256 _mintFee, address payable _mintFeeRecipient, string memory initBaseURI, string memory initContractURI) ERC721("Atoms", "ATM") {
         ckRegistry = _ckRegistry;
         collectionSize = _collectionSize;
         mintFee = _mintFee;
         mintFeeRecipient = _mintFeeRecipient;
+        baseURI = initBaseURI;
+        _contractURI = initContractURI;
     }
 
     /**
      * @dev Returns the base URI of the NFT
      */
-    function _baseURI() internal pure override returns (string memory) {
-        return "https://nftato.ms/api/atom/";
+    function _baseURI() internal view override returns (string memory) {
+        return baseURI;
     }
     
     /**
      * @dev Returns information about the collection
      */
-    function contractURI() public pure returns (string memory) {
-        return "https://nftato.ms/api/collection-metadata";
+    function contractURI() public view returns (string memory) {
+        return _contractURI;
+    }
+    
+    /**
+     * @dev Sets the base URI
+     */
+    function setBaseURI(string calldata newBaseURI) public onlyOwner {
+        baseURI = newBaseURI;
+    }
+    
+    /**
+     * @dev Sets the contract URI
+     */
+    function setContractURI(string calldata newContractURI) public onlyOwner {
+        _contractURI = newContractURI;
     }
     
     /**

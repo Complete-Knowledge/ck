@@ -33,7 +33,10 @@ describe('AtomicNFT', () => {
 
     const NFTFactory = await ethers.getContractFactory('AtomicNFT');
     // We will set the collection size to 19 for testing
-    const atomicNFT = await NFTFactory.deploy(registry.address, 19, 0, feeRecipient);
+    const baseURI = "https://nftato.ms/api/atom/";
+    const contractURI = "https://nftato.ms/api/token-metadata";
+    const atomicNFT = await NFTFactory.deploy(registry.address, 19, 0, feeRecipient,
+        baseURI, contractURI);
 
     return {
       atomicNFT, registry, verifier, owner, verifiedAccount, otherAccount,
@@ -154,6 +157,29 @@ describe('AtomicNFT', () => {
     it('Should support the ERC-721 Metadata interface', async () => {
       const { atomicNFT } = await loadFixture(deployNFTFixture);
       await expect(atomicNFT.supportsInterface('0x5b5e139f')).to.eventually.equal(true);
+    });
+  });
+
+  describe('NFT Metadata', () => {
+    it('Should support changing the contract URI by the owner only', async () => {
+      const { atomicNFT, verifiedAccount, owner } = await loadFixture(deployNFTFixture);
+      const newContractURI = "https://anynftmediahosting.site/atoms/token-metadata";
+      await atomicNFT.connect(owner).setContractURI(newContractURI);
+      await expect(atomicNFT.contractURI()).to.eventually.equal(newContractURI);
+      
+      await expect(atomicNFT.connect(verifiedAccount).setContractURI("fail!"))
+        .to.be.revertedWith("Ownable: caller is not the owner");
+    });
+    it('Should support changing the base token URI by the owner only', async () => {
+      const { atomicNFT, verifiedAccount, owner } = await loadFixture(deployNFTFixture);
+      const res = await atomicNFT.ownerMint(verifiedAccount.address);
+      const { tokenId } = (await res.wait()).events[0].args;
+      const newBaseURI = "https://anynftmediahosting.site/atoms/token/";
+      await atomicNFT.connect(owner).setBaseURI(newBaseURI);
+      await expect(atomicNFT.tokenURI(tokenId)).to.eventually.equal(newBaseURI + tokenId);
+      
+      await expect(atomicNFT.connect(verifiedAccount).setBaseURI("fail!"))
+        .to.be.revertedWith("Ownable: caller is not the owner");
     });
   });
 });
