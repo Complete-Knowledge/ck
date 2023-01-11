@@ -7,9 +7,11 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
 import "./AtomicNFTImageGenerationSource.sol";
+import "./SingleSlotBitArray.sol";
 
 interface ICKRegistry {
     function isCK(address owner) external returns (bool);
+    function verifications(address owner) external returns (SingleSlotBitArray.BitArray256 memory);
 }
 
 /**
@@ -21,6 +23,8 @@ contract AtomicNFT is ERC721, Ownable, AtomicNFTImageGenerationSource {
     
     string private _contractURI;
     string private baseURI;
+    
+    uint256 trustedVerificationBits = 0;
     
     /**
      * @dev The registry contract that determines if an address has provided
@@ -87,6 +91,13 @@ contract AtomicNFT is ERC721, Ownable, AtomicNFTImageGenerationSource {
     }
     
     /**
+     * @dev Sets CK verification bits trusted by this smart contract
+     */
+    function setTrustedVerificationBits(uint256 trustedBits) public onlyOwner {
+        trustedVerificationBits = trustedBits;
+    }
+    
+    /**
      * @dev Sets the mint fee, which would exist only to limit the number of
      * NFTs minted per address if open minting is enabled.
      */
@@ -107,6 +118,13 @@ contract AtomicNFT is ERC721, Ownable, AtomicNFTImageGenerationSource {
     function setOpenMintingEnabled(bool enabled) public onlyOwner {
         openMintingEnabled = enabled;
     }
+    
+    /**
+     * @dev Returns true if the owner as shown a trusted CK proof type
+     */
+    function isTrustedCK(address addr) public returns (bool) {
+        return ckRegistry.verifications(addr).storedValue & trustedVerificationBits != 0;
+    }
 
     /**
      * @dev Mint a limited supply NFT
@@ -125,7 +143,7 @@ contract AtomicNFT is ERC721, Ownable, AtomicNFTImageGenerationSource {
         require(msg.value >= mintFee, "Minimum mint fee not met");
         mintFeeRecipient.transfer(address(this).balance);
         require(openMintingEnabled, "Open minting not enabled");
-        require(ckRegistry.isCK(msg.sender), "Minter needs a CK proof");
+        require(isTrustedCK(msg.sender), "Minter needs a CK proof");
         _limitedMint(msg.sender);
     }
 
@@ -156,6 +174,6 @@ contract AtomicNFT is ERC721, Ownable, AtomicNFTImageGenerationSource {
         uint256 tokenId
     ) internal override(ERC721) {
         super._beforeTokenTransfer(from, to, tokenId);
-        require(ckRegistry.isCK(to), "Recipient needs a CK proof");
+        require(isTrustedCK(to), "Recipient needs a CK proof");
     }
 }

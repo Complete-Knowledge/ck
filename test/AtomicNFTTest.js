@@ -16,7 +16,7 @@ describe('AtomicNFT', () => {
   // and reset Hardhat Network to that snapshot in every test.
   async function deployNFTFixture() {
     // Contracts are deployed using the first signer/account by default
-    const [owner, verifiedAccount, otherAccount] = await ethers.getSigners();
+    const [owner, verifiedAccount, otherAccount, verifiedAccount2] = await ethers.getSigners();
     const feeRecipient = "0x00000000000000000000000000000000000000ff";
 
     const Registry = await ethers.getContractFactory('CKRegistry');
@@ -24,12 +24,20 @@ describe('AtomicNFT', () => {
 
     const Verifier = await ethers.getContractFactory('TestCKVerifier');
     const verifier = await Verifier.deploy();
+    const verifier2 = await Verifier.deploy();
 
     await verifier.setCKVerified(verifiedAccount.address, true);
+    await verifier2.setCKVerified(verifiedAccount.address, true);
+    await verifier2.setCKVerified(verifiedAccount2.address, true);
     // Assign bit (1 << 0x0) = 0x1
     await registry.assignVerifierAddress(verifier.address, 0);
     await registry.trustVerificationBit(0, true);
     await registry.registerCK(verifiedAccount.address, verifier.address);
+    
+    // Assign bit (1 << 0x1) = 0x2
+    await registry.assignVerifierAddress(verifier2.address, 1);
+    await registry.registerCK(verifiedAccount.address, verifier2.address);
+    await registry.registerCK(verifiedAccount2.address, verifier2.address);
 
     const NFTFactory = await ethers.getContractFactory('AtomicNFT');
     // We will set the collection size to 19 for testing
@@ -37,10 +45,13 @@ describe('AtomicNFT', () => {
     const contractURI = "https://nftato.ms/api/token-metadata";
     const atomicNFT = await NFTFactory.deploy(registry.address, 19, 0, feeRecipient,
         baseURI, contractURI);
+    
+    // Set the trusted verification bits
+    await atomicNFT.setTrustedVerificationBits(await registry.trustedVerificationBits());
 
     return {
       atomicNFT, registry, verifier, owner, verifiedAccount, otherAccount,
-      feeRecipient
+      feeRecipient, verifier2, verifiedAccount2,
     };
   }
 
@@ -140,6 +151,21 @@ describe('AtomicNFT', () => {
       await expect(atomicNFT.connect(verifiedAccount)['transferFrom(address,address,uint256)'](verifiedAccount.address, otherAccount.address, tokenId))
         .to.not.be.reverted;
       await expect(atomicNFT.ownerOf(tokenId)).to.eventually.equal(otherAccount.address);
+    });
+    it('Should allow the verification bits to be updated by the owner', async () => {
+      const { atomicNFT, owner, verifiedAccount, otherAccount, verifiedAccount2 } = await loadFixture(deployNFTFixture);
+      const res = await atomicNFT.ownerMint(verifiedAccount.address);
+      const { tokenId } = (await res.wait()).events[0].args;
+      await expect(atomicNFT.connect(verifiedAccount)['safeTransferFrom(address,address,uint256)'](verifiedAccount.address, verifiedAccount2.address, tokenId))
+        .to.be.revertedWith('Recipient needs a CK proof');
+      await expect(atomicNFT.connect(verifiedAccount).setTrustedVerificationBits(0x999))
+        .to.be.revertedWith("Ownable: caller is not the owner");
+      await atomicNFT.connect(owner).setTrustedVerificationBits(0x3);
+      await expect(atomicNFT.connect(verifiedAccount)['safeTransferFrom(address,address,uint256)'](verifiedAccount.address, verifiedAccount2.address, tokenId))
+        .to.not.be.reverted;
+      await expect(atomicNFT.ownerOf(tokenId)).to.eventually.equal(verifiedAccount2.address);
+      await expect(atomicNFT.connect(verifiedAccount2)['safeTransferFrom(address,address,uint256)'](verifiedAccount2.address, otherAccount.address, tokenId))
+        .to.be.revertedWith('Recipient needs a CK proof');
     });
   });
 
