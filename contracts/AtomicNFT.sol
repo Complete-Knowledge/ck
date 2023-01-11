@@ -157,7 +157,7 @@ contract AtomicNFT is ERC721, Ownable, AtomicNFTImageGenerationSource {
     /**
      * @dev Get the current token count
      */
-    function tokenCount() public view returns (uint256) {
+    function totalSupply() public view returns (uint256) {
         return _tokenIdCounter.current();
     }
 

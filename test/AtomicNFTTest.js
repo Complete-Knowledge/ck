@@ -2,6 +2,7 @@ const {
   loadFixture,
 } = require('@nomicfoundation/hardhat-network-helpers');
 const { ethers } = require('hardhat');
+const { BigNumber } = ethers;
 
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
@@ -116,6 +117,18 @@ describe('AtomicNFT', () => {
       for (let i = 0; i < collectionSize; i += 1) {
         // eslint-disable-next-line
         await atomicNFT.ownerMint(verifiedAccount.address);
+      }
+      await expect(atomicNFT.ownerMint(verifiedAccount.address))
+        .to.be.revertedWith('All atomic NFTs have been minted');
+    });
+    it('Should calculate the totalSupply correctly', async () => {
+      const { atomicNFT, verifiedAccount } = await loadFixture(deployNFTFixture);
+      const collectionSize = (await atomicNFT.collectionSize()).toNumber();
+      await expect(atomicNFT.totalSupply()).to.eventually.equal(BigNumber.from(0));
+      for (let i = 0; i < collectionSize; i += 1) {
+        // eslint-disable-next-line
+        await atomicNFT.ownerMint(verifiedAccount.address);
+        await expect(atomicNFT.totalSupply()).to.eventually.equal(BigNumber.from(i + 1));
       }
       await expect(atomicNFT.ownerMint(verifiedAccount.address))
         .to.be.revertedWith('All atomic NFTs have been minted');
