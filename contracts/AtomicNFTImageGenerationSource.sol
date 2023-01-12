@@ -2,10 +2,13 @@
 pragma solidity ^0.8.17;
 
 /**
- * @dev An "Atomic" NFT contract that requires a proof of complete knowledge from each token recipient.
+ * @dev Stores scripts that can generate Atomic NFT images
  * Generating the same images requires a large `constants.py` file containing the elements.
  */
 contract AtomicNFTImageGenerationSource {
+    /**
+     * @dev Returns the source code for cmap_utils.py
+     */
     string public sourceCodeCmapUtilsPy = "import random\n\
 from samila.functions import is_valid_color as is_valid_color\n\
 \n\
@@ -65,6 +68,9 @@ def get_random_cmap(length=20):\n\
     return new_cmap\n\
 ";
 
+    /**
+     * @dev Returns the source code for atomic_nft.py
+     */
     string public sourceCodeAtomicNftPy = "from PIL import Image\n\
 import math, random\n\
 from samila import GenerativeImage, Projection\n\
@@ -123,3 +129,4 @@ for nft_num in range(0, 200):\n\
     print(\"Finished NFT\", nft_num)\n\
 ";
 }
+

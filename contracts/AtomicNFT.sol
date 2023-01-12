@@ -24,7 +24,10 @@ contract AtomicNFT is ERC721, Ownable, AtomicNFTImageGenerationSource {
     string private _contractURI;
     string private baseURI;
     
-    uint256 trustedVerificationBits = 0;
+    /**
+     * @dev The verification bits of the CK registry trusted by this contract
+     */
+    uint256 public trustedVerificationBits = 0;
     
     /**
      * @dev The registry contract that determines if an address has provided
